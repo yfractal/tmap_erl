@@ -11,7 +11,6 @@
 
 -export([init/0]).
 -export([create_table/2]).
--export([find_workers/1]).
 -export([find_worker/2]).
 -export([put/3]).
 -export([get/2]).
@@ -42,7 +41,14 @@ init() ->
 
 create_table(Name, Partion) ->
     Workers = create_worker(Partion * ?READER_GROUP_FACTOR),
-    ets:insert(?TABLES, {Name, Workers}).
+    ets:insert(?TABLES, {Name, Partion * ?READER_GROUP_FACTOR}),
+    insert_worker(Name, 0, Workers).
+
+insert_worker(Name, I, []) ->
+    I;
+insert_worker(Name, I, [Worker|Workers]) ->
+    ets:insert(?TABLES, {{Name, I}, Worker}),
+    insert_worker(Name, I + 1, Workers).
 
 create_worker(Count) ->
     create_worker([], Count).
@@ -53,17 +59,13 @@ create_worker(Workers, Count) ->
     {ok, Worker} = tmap_erl_table:start_link(),
     create_worker([Worker|Workers], Count - 1).
 
-find_workers(Name) ->
-    [{Name, Workers}] = ets:lookup(?TABLES, Name),
-    Workers.
-
 find_worker(Name, Key) ->
-    Workers = find_workers(Name),
     %% TODO: catch partion count
-    PartionCount = length(Workers),
-    %% Key should be integer aways
+    [{Name, PartionCount}] = ets:lookup(?TABLES, Name),
+    %% %% Key should be integer aways
     Index = Key rem PartionCount,
-    lists:nth(Index + 1, Workers).
+    [{{Name, Index}, Worker}] = ets:lookup(?TABLES, {Name, Index}),
+    Worker.
 
 put(Name, Key, Val) ->
     Worker = find_worker(Name, Key),
