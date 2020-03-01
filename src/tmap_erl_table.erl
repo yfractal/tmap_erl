@@ -15,6 +15,9 @@
 -export([put/3]).
 -export([get/2]).
 
+-export([insert_by_ets/2]).
+-export([find_by_ets/1]).
+
 -define(SERVER, ?MODULE).
 
 -define(TABLES, tmap_erl_tables).
@@ -49,6 +52,12 @@ insert_worker(Name, I, []) ->
 insert_worker(Name, I, [Worker|Workers]) ->
     ets:insert(?TABLES, {{Name, I}, Worker}),
     insert_worker(Name, I + 1, Workers).
+
+insert_by_ets(Key, Val)->
+    ets:insert(?TABLES, {Key, Val}).
+
+find_by_ets(Key) ->
+    ets:lookup(?TABLES, Key).
 
 create_worker(Count) ->
     create_worker([], Count).

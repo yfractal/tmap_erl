@@ -27,3 +27,8 @@ Develop
                   io:format("rv ~p", [V])
           end,
           lists:seq(1, 1000)).
+
+    tmap_erl_table:init().
+
+    tmap_erl_table:insert_by_ets(1, 20).
+    tmap_erl_table:find_by_ets(1).
