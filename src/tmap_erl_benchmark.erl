@@ -3,8 +3,12 @@
 -export([run/2]).
 
 worker(Mointor, TableName, Start, End) ->
-    [tmap_erl_table:get(TableName, X) || X <- lists:seq(Start, End)],
-    Mointor ! inc.
+    receive
+        start ->
+            io:format("started!"),
+            [tmap_erl_table:get(TableName, X) || X <- lists:seq(Start, End)],
+            Mointor ! inc
+    end.
 
 ts() ->
     {Mega, Sec, Micro} = os:timestamp(),
@@ -35,6 +39,7 @@ run(SchedulerCount, Total) ->
     tmap_erl_table:create_table(TableName, SchedulerCount),
 
     [tmap_erl_table:put(TableName, X, X) || X <- lists:seq(1, Total)],
+    io:format("table created"),
 
     ProcessCount = SchedulerCount,
     CountForEachTask = round(Total / ProcessCount),
@@ -44,5 +49,5 @@ run(SchedulerCount, Total) ->
                    Start = (I - 1) * CountForEachTask,
                    End = I  * CountForEachTask,
                    worker(Mointor, TableName, Start, End)
-           end) || I <- lists:seq(1, SchedulerCount)],
+           end) ! start || I <- lists:seq(1, SchedulerCount)],
     io:format("stoped").
