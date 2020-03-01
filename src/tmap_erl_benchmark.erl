@@ -5,8 +5,11 @@
 worker(Mointor, TableName, Start, End) ->
     receive
         start ->
-            io:format("started!"),
+            io:format("started ~p ~p~n", [Start, End]),
+            T0 = ts(),
             [tmap_erl_table:get(TableName, X) || X <- lists:seq(Start, End)],
+            T1 = ts(),
+            io:format("one task takes ~p~n", [T1 - T0]),
             Mointor ! inc
     end.
 
@@ -28,10 +31,10 @@ mointor_fun(StartAt, Received, Waited) ->
             end
     end.
 
-%% tmap_erl_benchmark:run(1, 320000).
-%% tmap_erl_benchmark:run(2, 320000).
-%% tmap_erl_benchmark:run(4, 320000).
-%% tmap_erl_benchmark:run(8, 320000).
+%% tmap_erl_benchmark:run(1, 32000).
+%% tmap_erl_benchmark:run(2, 32000).
+%% tmap_erl_benchmark:run(4, 32000).
+%% tmap_erl_benchmark:run(8, 32000).
 run(SchedulerCount, Total) ->
     erlang:system_flag(schedulers_online, SchedulerCount),
     TableName = "bench",
@@ -39,7 +42,7 @@ run(SchedulerCount, Total) ->
     tmap_erl_table:create_table(TableName, SchedulerCount),
 
     [tmap_erl_table:put(TableName, X, X) || X <- lists:seq(1, Total)],
-    io:format("table created"),
+    io:format("table created ~n"),
 
     ProcessCount = SchedulerCount,
     CountForEachTask = round(Total / ProcessCount),
